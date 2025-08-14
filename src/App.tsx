@@ -73,7 +73,7 @@ const usePortfolioData = () => {
 };
 
 export default function ClientFriendlyPortfolioSite() {
-  const { owner, stats, mission, whatWeLookFor, faqs } = usePortfolioData();
+  const { owner, mission, whatWeLookFor, faqs } = usePortfolioData();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
