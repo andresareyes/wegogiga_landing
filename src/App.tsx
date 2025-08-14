@@ -83,10 +83,46 @@ export default function ClientFriendlyPortfolioSite() {
     partnershipInterest: "Partial Acquisition"
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const FORM_ENDPOINT = "https://formspree.io/f/xpwlnjeq"; // <-- replace with your Formspree form ID
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    alert(`Thanks ${formData.name}! We'll get back to you within 24 hours. We're excited to learn more about your game!`);
-    setFormData({ name: "", email: "", gameLink: "", message: "", partnershipInterest: "Partial Acquisition" });
+    setIsSubmitting(true);
+    setStatus("idle");
+
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    // Optional: add a subject line that appears in Formspree
+    data.set("_subject", `New inquiry from ${formData.name || "unknown"}`);
+
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        body: data,
+      });
+
+      if (res.ok) {
+        setStatus("success");
+        setFormData({
+          name: "",
+          email: "",
+          gameLink: "",
+          message: "",
+          partnershipInterest: "Partial Acquisition",
+        });
+        form.reset(); // clears uncontrolled fields (we still reset state above)
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -213,35 +249,42 @@ export default function ClientFriendlyPortfolioSite() {
           </div>
           
           <div className="rounded-3xl p-8 border border-white/10 bg-white/5 shadow-2xl">
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Name + Email */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <div className="block text-sm font-semibold mb-2">Your Name</div>
                   <input
+                    name="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="What should we call you?"
                     className="w-full rounded-xl bg-slate-950/60 border border-white/10 px-4 py-3 focus:border-cyan-400 focus:outline-none transition-colors"
+                    required
                   />
                 </div>
                 <div>
                   <div className="block text-sm font-semibold mb-2">Email or Discord</div>
                   <input
                     type="email"
+                    name="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="How can we reach you?"
                     className="w-full rounded-xl bg-slate-950/60 border border-white/10 px-4 py-3 focus:border-cyan-400 focus:outline-none transition-colors"
+                    required
                   />
                 </div>
               </div>
-              
+
+              {/* Game Link + Interest */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <div className="block text-sm font-semibold mb-2">Game Link (Optional)</div>
                   <input
+                    name="gameLink"
                     value={formData.gameLink}
-                    onChange={(e) => setFormData({...formData, gameLink: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, gameLink: e.target.value })}
                     placeholder="Link to your Roblox game"
                     className="w-full rounded-xl bg-slate-950/60 border border-white/10 px-4 py-3 focus:border-cyan-400 focus:outline-none transition-colors"
                   />
@@ -249,8 +292,9 @@ export default function ClientFriendlyPortfolioSite() {
                 <div>
                   <div className="block text-sm font-semibold mb-2">Partnership Interest</div>
                   <select
+                    name="partnershipInterest"
                     value={formData.partnershipInterest}
-                    onChange={(e) => setFormData({...formData, partnershipInterest: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, partnershipInterest: e.target.value })}
                     className="w-full rounded-xl bg-slate-950/60 border border-white/10 px-4 py-3 focus:border-cyan-400 focus:outline-none transition-colors"
                   >
                     <option>Partial Acquisition</option>
@@ -259,34 +303,57 @@ export default function ClientFriendlyPortfolioSite() {
                   </select>
                 </div>
               </div>
-              
+
+              {/* Message */}
               <div>
                 <div className="block text-sm font-semibold mb-2">Tell Us About Your Game</div>
                 <textarea
+                  name="message"
                   value={formData.message}
-                  onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  placeholder="What makes your game special? What are your goals? Any questions for us? We'd love to hear your story and see if we can help..."
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder="What makes your game special? What are your goals? Any questions for us?"
                   className="w-full rounded-xl bg-slate-950/60 border border-white/10 px-4 py-3 min-h-[120px] focus:border-cyan-400 focus:outline-none transition-colors"
+                  required
                 />
               </div>
-              
+
+              {/* Optional extras */}
+              <input type="hidden" name="_subject" value="New portfolio inquiry" />
+              {/* Honeypot for bots: keep it visually hidden */}
+              <input type="text" name="_gotcha" className="hidden" aria-hidden="true" tabIndex={-1} />
+
               <button
-                onClick={handleSubmit}
-                className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl"
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-60"
               >
-                Start the Conversation
+                {isSubmitting ? "Sending..." : "Start the Conversation"}
               </button>
-            </div>
-            
+
+              {/* Success / error feedback */}
+              {status === "success" && (
+                <div className="text-center text-emerald-300 text-sm">
+                  Thanks! We’ll get back to you within 24 hours.
+                </div>
+              )}
+              {status === "error" && (
+                <div className="text-center text-rose-300 text-sm">
+                  Hmm, something went wrong. Please email us at{" "}
+                  <a href={`mailto:${owner.email}`} className="underline">{owner.email}</a>.
+                </div>
+              )}
+            </form>
+
+            {/* existing “Prefer email?” block can stay below the form */}
             <div className="mt-8 text-center space-y-2">
               <div className="text-sm text-slate-400">
                 Prefer email? Just shoot us a message at{" "}
-                <a href={`mailto:${owner.email}`} className="text-cyan-300 hover:text-cyan-200 underline">
+                <a href={`mailto:${owner.email}`} className="text-cyan-300 hover:text-cyan-2 00 underline">
                   {owner.email}
                 </a>
               </div>
               <div className="text-xs text-slate-500">
-                We always respond within 24 hours (usually way faster because we're excited to hear from fellow creators!)
+                We always respond within 24 hours (usually faster).
               </div>
             </div>
           </div>
